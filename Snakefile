@@ -10,14 +10,14 @@ filename = config["filename"]
 data_source  = "https://raw.githubusercontent.com/BHKLAB-Pachyderm/ICB_Miao1-data/main/"
 
 rule get_MultiAssayExp:
-    output:
-        S3.remote(prefix + filename)
     input:
         S3.remote(prefix + "processed/CLIN.csv"),
         S3.remote(prefix + "processed/EXPR.csv"),
         S3.remote(prefix + "processed/SNV.csv"),
         S3.remote(prefix + "processed/cased_sequenced.csv"),
         S3.remote(prefix + "annotation/Gencode.v19.annotation.RData")
+    output:
+        S3.remote(prefix + filename)
     shell:
         """
         Rscript -e \
@@ -40,11 +40,11 @@ rule download_annotation:
         """
 
 rule format_snv:
-    output:
-        S3.remote(prefix + "processed/SNV.csv")
     input:
         S3.remote(prefix + "download/SNV.txt.gz"),
         S3.remote(prefix + "processed/cased_sequenced.csv")
+    output:
+        S3.remote(prefix + "processed/SNV.csv")
     shell:
         """
         Rscript scripts/Format_SNV.R \
@@ -53,11 +53,11 @@ rule format_snv:
         """
 
 rule format_expr:
-    output:
-        S3.remote(prefix + "processed/EXPR.csv")
     input:
         S3.remote(prefix + "download/EXPR.txt.gz"),
         S3.remote(prefix + "processed/cased_sequenced.csv")
+    output:
+        S3.remote(prefix + "processed/EXPR.csv")
     shell:
         """
         Rscript scripts/Format_EXPR.R \
@@ -66,11 +66,11 @@ rule format_expr:
         """
 
 rule format_clin:
-    output:
-        S3.remote(prefix + "processed/CLIN.csv")
     input:
         S3.remote(prefix + "processed/cased_sequenced.csv"),
         S3.remote(prefix + "download/CLIN.txt")
+    output:
+        S3.remote(prefix + "processed/CLIN.csv")
     shell:
         """
         Rscript scripts/Format_CLIN.R \
@@ -79,11 +79,11 @@ rule format_clin:
         """
 
 rule format_cased_sequenced:
-    output:
-        S3.remote(prefix + "processed/cased_sequenced.csv")
     input:
         S3.remote(prefix + "download/CLIN.txt"),
         S3.remote(prefix + "download/EXPR.txt.gz")
+    output:
+        S3.remote(prefix + "processed/cased_sequenced.csv")
     shell:
         """
         Rscript scripts/Format_cased_sequenced.R \
@@ -91,14 +91,29 @@ rule format_cased_sequenced:
         {prefix}processed \
         """
 
-rule download_data:
+rule format_downloaded_data:
+    input:
+        S3.remote(prefix + "download/aan5951_tables1.xlsx"),
+        S3.remote(prefix + "download/aan5951_tables2.xlsx"),
+        S3.remote(prefix + "download/aan5951_tables8.xlsx")
     output:
         S3.remote(prefix + "download/CLIN.txt"),
         S3.remote(prefix + "download/EXPR.txt.gz"),
         S3.remote(prefix + "download/SNV.txt.gz"),
     shell:
         """
-        wget {data_source}CLIN.txt -O {prefix}download/CLIN.txt
-        wget {data_source}EXPR.txt.gz -O {prefix}download/EXPR.txt.gz
-        wget {data_source}SNV.txt.gz -O {prefix}download/SNV.txt.gz
+        Rscript scripts/format_downloaded_data.R \
+        {prefix}download
+        """ 
+
+rule download_data:
+    output:
+        S3.remote(prefix + "download/aan5951_tables1.xlsx"),
+        S3.remote(prefix + "download/aan5951_tables2.xlsx"),
+        S3.remote(prefix + "download/aan5951_tables8.xlsx")
+    shell:
+        """
+        wget -O {prefix}download/aan5951_tables1.xlsx https://github.com/BHKLAB-Pachyderm/ICB_Miao1-data/raw/main/aan5951_tables1.xlsx
+        wget -O {prefix}download/aan5951_tables2.xlsx https://github.com/BHKLAB-Pachyderm/ICB_Miao1-data/raw/main/aan5951_tables2.xlsx
+        wget -O {prefix}download/aan5951_tables8.xlsx https://github.com/BHKLAB-Pachyderm/ICB_Miao1-data/raw/main/aan5951_tables8.xlsx
         """ 
