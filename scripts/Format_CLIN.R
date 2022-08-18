@@ -1,4 +1,5 @@
 library(tibble)
+library(stringr)
 
 args <- commandArgs(trailingOnly = TRUE)
 input_dir <- args[1]
@@ -35,6 +36,8 @@ clin <- annotate_tissue(clin=clin, study='Miao.1', annotation_tissue=annotation_
 
 annotation_drug <- read.csv(file=file.path(annot_dir, 'curation_drug.csv'))
 clin <- add_column(clin, treatmentid=annotate_drug('Miao1', clin$drug, annotation_drug), .after='tissueid')
+
+clin$treatmentid <- str_replace(clin$treatmentid, ' \\+ ', ":")
 
 write.table( clin , file=file.path(output_dir, "CLIN.csv") , quote=FALSE , sep=";" , col.names=TRUE , row.names=FALSE )
 
